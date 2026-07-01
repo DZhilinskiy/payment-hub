@@ -95,10 +95,9 @@
             <div>
               <div class="text-[10px] font-semibold text-ink-400 uppercase tracking-wider mb-1.5">🇰🇿 БЦК — курсы приложения</div>
               <div class="space-y-1.5">
-                <label class="flex items-center gap-1.5"><span class="flex-1 text-[11px] text-ink-500">Купить $ (app)</span><input type="number" step="0.01" id="bcc_buy_usd_app" value="463.87" class="w-24 px-1.5 py-1 text-[12px] border border-ink-200 rounded num text-right"/></label>
-                <label class="flex items-center gap-1.5"><span class="flex-1 text-[11px] text-ink-500">Купить $ (card)</span><input type="number" step="0.01" id="bcc_buy_usd_card" value="466.90" class="w-24 px-1.5 py-1 text-[12px] border border-ink-200 rounded num text-right"/></label>
-                <label class="flex items-center gap-1.5"><span class="flex-1 text-[11px] text-ink-500">Купить € (app)</span><input type="number" step="0.01" id="bcc_buy_eur_app" value="545.00" class="w-24 px-1.5 py-1 text-[12px] border border-ink-200 rounded num text-right"/></label>
-                <label class="flex items-center gap-1.5"><span class="flex-1 text-[11px] text-ink-500">Купить Br (app)</span><input type="number" step="0.01" id="bcc_buy_byn_app" value="175.13" class="w-24 px-1.5 py-1 text-[12px] border border-ink-200 rounded num text-right"/></label>
+                <label class="flex items-center gap-1.5"><span class="flex-1 text-[11px] text-ink-500">Купить $</span><input type="number" step="0.01" id="bcc_buy_usd_app" value="463.87" class="w-24 px-1.5 py-1 text-[12px] border border-ink-200 rounded num text-right"/></label>
+                <label class="flex items-center gap-1.5"><span class="flex-1 text-[11px] text-ink-500">Купить €</span><input type="number" step="0.01" id="bcc_buy_eur_app" value="545.00" class="w-24 px-1.5 py-1 text-[12px] border border-ink-200 rounded num text-right"/></label>
+                <label class="flex items-center gap-1.5"><span class="flex-1 text-[11px] text-ink-500">Купить Br</span><input type="number" step="0.01" id="bcc_buy_byn_app" value="175.13" class="w-24 px-1.5 py-1 text-[12px] border border-ink-200 rounded num text-right"/></label>
                 <label class="flex items-center gap-1.5"><span class="flex-1 text-[11px] text-ink-500">Продать $ → ₸</span><input type="number" step="0.01" id="bcc_sell_usd" value="472.90" class="w-24 px-1.5 py-1 text-[12px] border border-ink-200 rounded num text-right"/></label>
                 <label class="flex items-center gap-1.5"><span class="flex-1 text-[11px] text-ink-500">Продать € → ₸</span><input type="number" step="0.01" id="bcc_sell_eur" value="556.00" class="w-24 px-1.5 py-1 text-[12px] border border-ink-200 rounded num text-right"/></label>
               </div>
@@ -312,7 +311,7 @@ const fmt0 = (n) => (isFinite(n) ? n : 0).toLocaleString('ru-RU', { maximumFract
 // LocalStorage persistence
 const INPUTS = ['bal_bcc_kzt','bal_bcc_usd','bal_bcc_eur','bal_aw_usd','bal_aw_eur',
   'target_byn','nbk_usd','nbk_eur','nbk_byn','nbk_rub','nbrb_usd','nbrb_eur','nbrb_rub100','nbrb_kzt100',
-  'bcc_buy_usd_app','bcc_buy_usd_card','bcc_buy_eur_app','bcc_buy_byn_app','bcc_sell_usd','bcc_sell_eur',
+  'bcc_buy_usd_app','bcc_buy_eur_app','bcc_buy_byn_app','bcc_sell_usd','bcc_sell_eur',
   'bsb_buy_usd','bsb_buy_eur','prior_buy_usd','prior_buy_eur',
   'bcc_swift_byn_fee','bcc_swift_fx_pct','bcc_swift_fx_min','bcc_swift_fx_max','corr_our_fee','corr_our_fee_rb',
   'bsb_link_visa','bsb_link_bepaid','bsb_link_bsb','bsb_in_pct','prior_in_pct','bsb_in_min',
@@ -344,7 +343,7 @@ function ctx() {
     nbrb_usd: num('nbrb_usd'), nbrb_eur: num('nbrb_eur'), nbrb_rub100: num('nbrb_rub100'),
     nbrb_kzt: num('nbrb_kzt100') / 100,
     // BCC quotes
-    bcc_buy_usd_app: num('bcc_buy_usd_app'), bcc_buy_usd_card: num('bcc_buy_usd_card'),
+    bcc_buy_usd_app: num('bcc_buy_usd_app'),
     bcc_buy_eur_app: num('bcc_buy_eur_app'), bcc_buy_byn_app: num('bcc_buy_byn_app'),
     bcc_sell_usd: num('bcc_sell_usd'), bcc_sell_eur: num('bcc_sell_eur'),
     // BSB / Prior
@@ -424,7 +423,7 @@ const SCENARIOS = [
     }
   },
   {
-    id:'kzt_usd_bsblink', group:'bcc_kzt', name:'KZT → купить USD (app) → BSB-link → BYN в БСБ',
+    id:'kzt_usd_bsblink', group:'bcc_kzt', name:'KZT → купить USD → BSB-link → BYN в БСБ',
     tag:'BSB-link', sourceCcy:'KZT',
     calc(kzt, c) {
       const usd = kzt / c.bcc_buy_usd_app;
@@ -433,27 +432,9 @@ const SCENARIOS = [
       return {
         received_byn: finalByn,
         steps:[
-          {label:'Покупка USD в БЦК (app)', detail:`${fmt(c.bcc_buy_usd_app,2)} KZT/USD → ${fmt(usd,2)} USD`, cost:0},
+          {label:'Покупка USD в БЦК', detail:`${fmt(c.bcc_buy_usd_app,2)} KZT/USD → ${fmt(usd,2)} USD`, cost:0},
           {label:'BSB-link потери', detail:`${fmt(c.bsb_link_loss*100,1)}%`, cost: usd - usdAfterLink, ccy:'USD'},
           {label:'Конверсия USD→BYN в БСБ', detail:`${fmt(c.bsb_buy_usd,4)} BYN/USD`, cost:0},
-          ...(c.npd>0?[{label:'НПД 10%', cost: finalByn/(1-c.npd)*c.npd, ccy:'BYN'}]:[])
-        ]
-      };
-    }
-  },
-  {
-    id:'kzt_usd_card_bsblink', group:'bcc_kzt', name:'KZT → купить USD (card) → BSB-link → BYN',
-    tag:'BSB-link', sourceCcy:'KZT',
-    calc(kzt, c) {
-      const usd = kzt / c.bcc_buy_usd_card;
-      const usdAfterLink = usd * (1 - c.bsb_link_loss);
-      const finalByn = usdAfterLink * c.bsb_buy_usd * (1 - c.npd);
-      return {
-        received_byn: finalByn,
-        steps:[
-          {label:'Покупка USD через карту (cashless)', detail:`${fmt(c.bcc_buy_usd_card,2)} KZT/USD`, cost:0},
-          {label:'BSB-link потери', detail:`${fmt(c.bsb_link_loss*100,1)}%`, cost: usd - usdAfterLink, ccy:'USD'},
-          {label:'Конверсия USD→BYN в БСБ', cost:0},
           ...(c.npd>0?[{label:'НПД 10%', cost: finalByn/(1-c.npd)*c.npd, ccy:'BYN'}]:[])
         ]
       };
