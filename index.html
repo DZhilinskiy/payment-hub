@@ -1011,41 +1011,42 @@ function renderHero(best, second, gap, gapPct, lossVal, lossPct, totalScen, mode
 function renderBarChart(sorted, best, worst, mode) {
   const isToTarget = mode === 'to-target';
   const bestVal = isToTarget ? best.sentByn : best.received_byn;
-  const worstVal = isToTarget ? worst.sentByn : worst.received_byn;
+
+  // Цветовая шкала по отклонению (одного тона: приглушённый track + насыщенный fill)
+  const paletteForDelta = (delta) => {
+    if (delta < 0.5) return { track: 'bg-brand-100', fill: 'bg-brand-500' };
+    if (delta < 3)   return { track: 'bg-brand-100', fill: 'bg-brand-500' };
+    if (delta < 7)   return { track: 'bg-amber-100', fill: 'bg-amber-500' };
+    if (delta < 15)  return { track: 'bg-warn-100',  fill: 'bg-warn-500/80' };
+    return              { track: 'bg-warn-100',  fill: 'bg-warn-500' };
+  };
 
   const bars = sorted.map((r, i) => {
     const isBest = i === 0;
     const isSelected = r.s.id === (selectedScenarioId || best.s.id);
-    // rel: в to-target — насколько дороже (положительное = хуже), в from-balance — насколько меньше (отриц. = хуже)
-    let rel, widthPct;
-    if (isToTarget) {
-      rel = bestVal > 0 ? (r.sentByn / bestVal - 1) * 100 : 0;
-      // best=100%, дороже — уже: best.sentByn / r.sentByn
-      widthPct = r.sentByn > 0 ? Math.max(6, (bestVal / r.sentByn) * 100) : 0;
-    } else {
-      rel = bestVal > 0 ? (r.received_byn / bestVal - 1) * 100 : 0;
-      const barMin = Math.min(worstVal, bestVal * 0.7);
-      const barSpan = Math.max(1, bestVal - barMin);
-      widthPct = bestVal > 0 ? Math.max(6, ((r.received_byn - barMin) / barSpan) * 100) : 0;
-    }
-    // Цвет: чем сильнее отклонение от лучшего — тем хуже
+    // rel: в to-target — насколько дороже (>0 хуже); в from-balance — насколько меньше (<0 хуже)
+    const rel = bestVal > 0
+      ? ((isToTarget ? r.sentByn : r.received_byn) / bestVal - 1) * 100
+      : 0;
     const absDelta = Math.abs(rel);
-    const color = isBest ? 'bg-brand-500' : (absDelta < 3 ? 'bg-brand-400' : absDelta < 8 ? 'bg-amber-400' : 'bg-warn-500/70');
-    // Что показываем в сумме: в to-target — сумму отправления в исходной валюте; в from-balance — полученное
+    // Fill: чем ближе к best, тем длиннее fill. Best = 100%. Пропорция нелинейно спадает.
+    const fillPct = isBest ? 100 : Math.max(20, 100 - absDelta * 5);
+    const palette = isBest ? { track: 'bg-brand-100', fill: 'bg-brand-500' } : paletteForDelta(absDelta);
+    // Основная цифра справа
     const primary = isToTarget ? `${fmt0(r.sent)} ${csym(r.s.sourceCcy)}` : fmt(r.received_byn, 2);
-    // rel текст: в to-target положительное = хуже (красный); в from-balance отрицательное = хуже
+    // Знак rel для окраски текста
     const isWorseSign = isToTarget ? rel > 0.05 : rel < -0.05;
     const relText = i === 0 ? 'база' : (isToTarget ? `+${fmt(rel, 1)}%` : `${fmt(rel, 1)}%`);
     return `
       <button data-scenario-id="${r.s.id}"
-        class="w-full text-left group hover:bg-ink-50/60 rounded px-2 py-1 transition ${isSelected?'bg-ink-50':''}">
+        class="w-full text-left group hover:bg-ink-50/60 rounded px-2 py-1 transition ${isSelected?'ring-1 ring-brand-300 bg-white':''}">
         <div class="flex items-center gap-3">
           <div class="w-4 text-[10px] text-ink-400 text-right">${i+1}</div>
           <div class="w-52 truncate text-[12px] ${isBest?'font-semibold':''} ${isSelected?'text-brand-700':'text-ink-700'}">
             <span class="mr-1">${r.group.flag}</span>${symName(r.s.name)}
           </div>
-          <div class="flex-1 relative h-3">
-            <div class="absolute inset-y-0 left-0 rounded-sm ${color} transition-all" style="width:${widthPct}%"></div>
+          <div class="flex-1 relative h-3.5 rounded overflow-hidden ${palette.track}">
+            <div class="absolute inset-y-0 left-0 ${palette.fill} transition-all" style="width:${fillPct}%"></div>
           </div>
           <div class="w-28 text-right text-[13px] font-semibold num ${isBest?'text-brand-700':'text-ink-800'}">${primary}</div>
           <div class="w-14 text-right text-[10.5px] num ${isWorseSign ? 'text-warn-500' : 'text-ink-400'}">${relText}</div>
