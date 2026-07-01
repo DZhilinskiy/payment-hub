@@ -234,19 +234,24 @@
         </div>
 
         <div>
-          <div class="text-xs font-semibold text-ink-500 uppercase tracking-wider mb-2">Airwallex → Garna → подрядчику</div>
+          <div class="text-xs font-semibold text-ink-500 uppercase tracking-wider mb-2">Airwallex → Garna (приём средств)</div>
           <div class="space-y-2">
-            <div class="flex items-center gap-2"><span class="w-40 text-xs text-ink-500">Garna: % от суммы</span><input type="number" step="0.1" id="garna_pct" value="3.0" class="flex-1 px-2 py-1.5 border border-ink-200 rounded-md num text-right"/></div>
-            <div class="flex items-center gap-2"><span class="w-40 text-xs text-ink-500">Garna: FX-спред к НБРБ, %</span><input type="number" step="0.1" id="garna_fx_spread" value="0.0" class="flex-1 px-2 py-1.5 border border-ink-200 rounded-md num text-right"/></div>
-            <div class="flex items-center gap-2"><span class="w-40 text-xs text-ink-500">Выплата на карту BYN: спред, %</span><input type="number" step="0.1" id="garna_card_spread" value="0.0" class="flex-1 px-2 py-1.5 border border-ink-200 rounded-md num text-right"/></div>
+            <div class="flex items-center gap-2"><span class="w-40 text-xs text-ink-500">Garna: комиссия приёма, %</span><input type="number" step="0.1" id="garna_pct" value="3.0" class="flex-1 px-2 py-1.5 border border-ink-200 rounded-md num text-right"/></div>
+            <div class="flex items-center gap-2"><span class="w-40 text-xs text-ink-500">Garna: FX-спред к НБРБ, %</span><input type="number" step="0.1" id="garna_fx_spread" value="1.0" class="flex-1 px-2 py-1.5 border border-ink-200 rounded-md num text-right"/></div>
+            <div class="text-[11px] text-ink-400">Спред применяется, если Garna конвертирует USD/EUR → BYN (вывод на BYN-карту или SWIFT в BYN).</div>
           </div>
 
-          <div class="text-xs font-semibold text-ink-500 uppercase tracking-wider mt-4 mb-2">Garna → SWIFT (вывод подрядчиком)</div>
+          <div class="text-xs font-semibold text-ink-500 uppercase tracking-wider mt-4 mb-2">Garna → вывод подрядчику (комиссии)</div>
           <div class="space-y-2">
-            <div class="flex items-center gap-2"><span class="w-40 text-xs text-ink-500">Garna: fee за SWIFT-вывод, USD/EUR</span><input type="number" step="1" id="aw_swift_fee" value="25" class="flex-1 px-2 py-1.5 border border-ink-200 rounded-md num text-right"/></div>
-            <div class="flex items-center gap-2"><span class="w-40 text-xs text-ink-500">Корр.банки RB (санкц-риск), USD/EUR</span><input type="number" step="1" id="corr_our_fee_rb" value="40" class="flex-1 px-2 py-1.5 border border-ink-200 rounded-md num text-right"/></div>
-            <div class="flex items-center gap-2 hidden"><input type="hidden" id="aw_fx_markup" value="0"/></div>
-            <div class="text-[11px] text-ink-400 leading-relaxed">Прямой SWIFT из Airwallex в BY недоступен — только через Garna. Комиссии корр.банков на RB-переводы обычно выше «обычных» из-за санкц-фильтров.</div>
+            <div class="flex items-center gap-2"><span class="w-40 text-xs text-ink-500">На валютную карту (USD/EUR)</span><input type="number" step="1" id="garna_card_fx_fee" value="0" class="flex-1 px-2 py-1.5 border border-ink-200 rounded-md num text-right"/></div>
+            <div class="flex items-center gap-2"><span class="w-40 text-xs text-ink-500">На карту BYN (в BYN)</span><input type="number" step="1" id="garna_card_byn_fee" value="0" class="flex-1 px-2 py-1.5 border border-ink-200 rounded-md num text-right"/></div>
+            <div class="flex items-center gap-2"><span class="w-40 text-xs text-ink-500">SWIFT в BYN — fee Garna, BYN</span><input type="number" step="1" id="garna_swift_byn_fee" value="30" class="flex-1 px-2 py-1.5 border border-ink-200 rounded-md num text-right"/></div>
+            <div class="flex items-center gap-2"><span class="w-40 text-xs text-ink-500">SWIFT: корр.банки RB, BYN</span><input type="number" step="1" id="corr_our_fee_rb_byn" value="60" class="flex-1 px-2 py-1.5 border border-ink-200 rounded-md num text-right"/></div>
+            <input type="hidden" id="garna_card_spread" value="0"/>
+            <input type="hidden" id="aw_swift_fee" value="25"/>
+            <input type="hidden" id="corr_our_fee_rb" value="40"/>
+            <input type="hidden" id="aw_fx_markup" value="0"/>
+            <div class="text-[11px] text-ink-400 leading-relaxed">Прямой SWIFT из Airwallex в BY недоступен — только через Garna. SWIFT в BYN идёт через рос. корр.банки — санкц-фильтры повышают итоговый корр-fee.</div>
           </div>
         </div>
 
@@ -324,7 +329,7 @@ const INPUTS = ['bal_bcc_kzt','bal_bcc_usd','bal_bcc_eur','bal_aw_usd','bal_aw_e
   'bsb_buy_usd','bsb_buy_eur','prior_buy_usd','prior_buy_eur',
   'bcc_swift_byn_fee','bcc_swift_fx_pct','bcc_swift_fx_min','bcc_swift_fx_max','corr_our_fee','corr_our_fee_rb',
   'bsb_link_visa','bsb_link_bepaid','bsb_link_bsb','bsb_in_pct','prior_in_pct','bsb_in_min',
-  'garna_pct','garna_fx_spread','garna_card_spread','aw_swift_fee','aw_fx_markup'];
+  'garna_pct','garna_fx_spread','garna_card_spread','garna_card_fx_fee','garna_card_byn_fee','garna_swift_byn_fee','corr_our_fee_rb_byn','aw_swift_fee','aw_fx_markup'];
 
 function loadState() {
   try {
@@ -374,6 +379,10 @@ function ctx() {
     garna_pct: num('garna_pct')/100,
     garna_fx_spread: num('garna_fx_spread')/100,
     garna_card_spread: num('garna_card_spread')/100,
+    garna_card_fx_fee: num('garna_card_fx_fee'),
+    garna_card_byn_fee: num('garna_card_byn_fee'),
+    garna_swift_byn_fee: num('garna_swift_byn_fee'),
+    corr_our_fee_rb_byn: num('corr_our_fee_rb_byn'),
     aw_swift_fee: num('aw_swift_fee'),
     aw_fx_markup: num('aw_fx_markup')/100,
     npd: $('npdOn').checked ? 0.10 : 0,
@@ -519,101 +528,143 @@ const SCENARIOS = [
   },
   // (аналогично: SWIFT EUR из БЦК недоступен для получателей-граждан РБ)
 
-  // ============ ИЗ AIRWALLEX (UK) ============
+  // ============ ИЗ AIRWALLEX (UK) — механика Garna ============
+  // Airwallex шлёт валюту в Garna → Garna −3% при получении → подрядчик получает
+  // в исходной валюте (USD/EUR). Дальше выбирает вывод:
+  //  (a) на валютную карту БСБ — без конверсии Garna, конвертируем в BYN у подрядчика при снятии;
+  //  (b) на BYN-карту БСБ — Garna конвертирует по своему курсу;
+  //  (c) SWIFT в BYN — Garna конвертирует и шлёт SWIFT в BYN (комиссии SWIFT + вх.БСБ).
+
   {
-    id:'aw_usd_garna_card', group:'aw_usd', name:'Airwallex USD → Garna → карта BYN подрядчику',
-    tag:'Garna → карта', sourceCcy:'USD',
+    id:'aw_usd_garna_usdcard', group:'aw_usd', name:'Airwallex USD → Garna → USD-карта → конв. у подрядчика',
+    tag:'Garna → USD-карта', sourceCcy:'USD',
     calc(usd, c) {
-      // Garna удерживает 3% с суммы, затем конвертирует по НБРБ (± spread) в BYN и шлёт на карту
       const garnaCut = usd * c.garna_pct;
       const usdAfterGarna = usd - garnaCut;
-      // Курс USD/BYN в Garna: НБРБ USD − garna_fx_spread%
-      const garnaRate = c.nbrb_usd * (1 - c.garna_fx_spread);
-      const bynFromGarna = usdAfterGarna * garnaRate;
-      // Спред при выплате на карту (обычно 0, но может быть)
-      const finalByn = bynFromGarna * (1 - c.garna_card_spread) * (1 - c.npd);
-      return {
-        received_byn: finalByn,
-        steps:[
-          {label:'Garna комиссия', detail:`${fmt(c.garna_pct*100,1)}%`, cost: garnaCut, ccy:'USD'},
-          {label:'Конверсия USD→BYN', detail:`${fmt(garnaRate,4)} BYN/USD (НБРБ − ${fmt(c.garna_fx_spread*100,2)}%)`, cost:0},
-          ...(c.garna_card_spread>0?[{label:'Выплата на карту, спред', cost: bynFromGarna*c.garna_card_spread, ccy:'BYN'}]:[]),
-          ...(c.npd>0?[{label:'НПД 10%', cost: finalByn/(1-c.npd)*c.npd, ccy:'BYN'}]:[])
-        ]
-      };
-    }
-  },
-  {
-    id:'aw_usd_garna_swift', group:'aw_usd', name:'Airwallex USD → Garna (−3%) → подрядчик выводит SWIFT',
-    tag:'Garna → SWIFT', sourceCcy:'USD',
-    calc(usd, c) {
-      // 1. Garna удерживает 3% при получении от Airwallex
-      const garnaCut = usd * c.garna_pct;
-      const usdAfterGarna = usd - garnaCut;
-      // 2. Подрядчик заказывает вывод по SWIFT из Garna — Garna берёт fee за отправку
-      const garnaSwiftFee = c.aw_swift_fee;
-      // 3. Корр.банки (санкц-риск RB — обычно повышенные)
-      const corrRb = c.corr_our_fee_rb;
-      const usdOnRoute = usdAfterGarna - garnaSwiftFee - corrRb;
-      // 4. Входящий SWIFT в БСБ
-      const bsbInFee = usdOnRoute * c.bsb_in_pct;
-      const usdOnAccount = usdOnRoute - bsbInFee;
-      // 5. Конверсия в BYN в БСБ
-      const finalByn = usdOnAccount * c.bsb_buy_usd * (1 - c.npd);
+      const cardFee = c.garna_card_fx_fee;
+      const usdOnCard = usdAfterGarna - cardFee;
+      // Подрядчик сам конвертирует USD→BYN в БСБ по курсу покупки USD
+      const finalByn = usdOnCard * c.bsb_buy_usd * (1 - c.npd);
       return {
         received_byn: finalByn,
         steps:[
           {label:'Garna комиссия при получении', detail:`${fmt(c.garna_pct*100,1)}%`, cost: garnaCut, ccy:'USD'},
-          {label:'Garna: fee за SWIFT-вывод', detail:'фикс за исходящий SWIFT', cost: garnaSwiftFee, ccy:'USD'},
-          {label:'Корр.банки (OUR, RB санкц-риск)', detail:'на маршруте до BY', cost: corrRb, ccy:'USD'},
-          {label:'Входящий SWIFT в БСБ', detail:`${fmt(c.bsb_in_pct*100,1)}%`, cost: bsbInFee, ccy:'USD'},
-          {label:'Конверсия USD→BYN в БСБ', detail:`${fmt(c.bsb_buy_usd,4)} BYN/USD`, cost:0},
+          ...(cardFee>0?[{label:'Garna fee за вывод на валютную карту', cost: cardFee, ccy:'USD'}]:[]),
+          {label:'Конверсия USD→BYN у подрядчика (БСБ)', detail:`${fmt(c.bsb_buy_usd,4)} BYN/USD`, cost:0},
           ...(c.npd>0?[{label:'НПД 10%', cost: finalByn/(1-c.npd)*c.npd, ccy:'BYN'}]:[])
         ]
       };
     }
   },
-  // (прямой SWIFT из Airwallex в BY не работает — только через Garna)
   {
-    id:'aw_eur_garna_card', group:'aw_eur', name:'Airwallex EUR → Garna → карта BYN',
-    tag:'Garna → карта', sourceCcy:'EUR',
-    calc(eur, c) {
-      const garnaCut = eur * c.garna_pct;
-      const eurAfterGarna = eur - garnaCut;
-      const garnaRate = c.nbrb_eur * (1 - c.garna_fx_spread);
-      const bynFromGarna = eurAfterGarna * garnaRate;
-      const finalByn = bynFromGarna * (1 - c.garna_card_spread) * (1 - c.npd);
+    id:'aw_usd_garna_bynccard', group:'aw_usd', name:'Airwallex USD → Garna → BYN-карта (Garna конвертирует)',
+    tag:'Garna → BYN-карта', sourceCcy:'USD',
+    calc(usd, c) {
+      const garnaCut = usd * c.garna_pct;
+      const usdAfterGarna = usd - garnaCut;
+      const garnaRate = c.nbrb_usd * (1 - c.garna_fx_spread);
+      const bynAfterConv = usdAfterGarna * garnaRate;
+      const cardFee = c.garna_card_byn_fee;
+      const finalByn = (bynAfterConv - cardFee) * (1 - c.npd);
       return {
         received_byn: finalByn,
         steps:[
-          {label:'Garna комиссия', detail:`${fmt(c.garna_pct*100,1)}%`, cost: garnaCut, ccy:'EUR'},
-          {label:'Конверсия EUR→BYN', detail:`${fmt(garnaRate,4)} BYN/EUR`, cost:0},
-          ...(c.garna_card_spread>0?[{label:'Выплата на карту, спред', cost: bynFromGarna*c.garna_card_spread, ccy:'BYN'}]:[]),
+          {label:'Garna комиссия при получении', detail:`${fmt(c.garna_pct*100,1)}%`, cost: garnaCut, ccy:'USD'},
+          {label:'Конверсия USD→BYN у Garna', detail:`${fmt(garnaRate,4)} BYN/USD (НБРБ − ${fmt(c.garna_fx_spread*100,2)}%)`, cost:0},
+          ...(cardFee>0?[{label:'Garna fee за вывод на BYN-карту', cost: cardFee, ccy:'BYN'}]:[]),
           ...(c.npd>0?[{label:'НПД 10%', cost: finalByn/(1-c.npd)*c.npd, ccy:'BYN'}]:[])
         ]
       };
     }
   },
   {
-    id:'aw_eur_garna_swift', group:'aw_eur', name:'Airwallex EUR → Garna (−3%) → подрядчик выводит SWIFT',
-    tag:'Garna → SWIFT', sourceCcy:'EUR',
+    id:'aw_usd_garna_swift', group:'aw_usd', name:'Airwallex USD → Garna → SWIFT в BYN',
+    tag:'Garna → SWIFT', sourceCcy:'USD',
+    calc(usd, c) {
+      const garnaCut = usd * c.garna_pct;
+      const usdAfterGarna = usd - garnaCut;
+      const garnaRate = c.nbrb_usd * (1 - c.garna_fx_spread);
+      const bynAfterConv = usdAfterGarna * garnaRate;
+      const swiftFee = c.garna_swift_byn_fee;
+      const corrRb = c.corr_our_fee_rb_byn;
+      const bynOnRoute = bynAfterConv - swiftFee - corrRb;
+      const bsbInFee = Math.max(c.bsb_in_min, bynOnRoute * c.bsb_in_pct);
+      const finalByn = (bynOnRoute - bsbInFee) * (1 - c.npd);
+      return {
+        received_byn: finalByn,
+        steps:[
+          {label:'Garna комиссия при получении', detail:`${fmt(c.garna_pct*100,1)}%`, cost: garnaCut, ccy:'USD'},
+          {label:'Конверсия USD→BYN у Garna', detail:`${fmt(garnaRate,4)} BYN/USD`, cost:0},
+          {label:'Garna: fee за SWIFT-вывод в BYN', cost: swiftFee, ccy:'BYN'},
+          {label:'Корр.банки RB (санкц-риск)', detail:'BYN идёт через рос. корр.', cost: corrRb, ccy:'BYN'},
+          {label:'Входящий SWIFT в БСБ', detail:`${fmt(c.bsb_in_pct*100,1)}% (мин ${c.bsb_in_min} BYN)`, cost: bsbInFee, ccy:'BYN'},
+          ...(c.npd>0?[{label:'НПД 10%', cost: finalByn/(1-c.npd)*c.npd, ccy:'BYN'}]:[])
+        ]
+      };
+    }
+  },
+  {
+    id:'aw_eur_garna_eurcard', group:'aw_eur', name:'Airwallex EUR → Garna → EUR-карта → конв. у подрядчика',
+    tag:'Garna → EUR-карта', sourceCcy:'EUR',
     calc(eur, c) {
       const garnaCut = eur * c.garna_pct;
       const eurAfterGarna = eur - garnaCut;
-      const garnaSwiftFee = c.aw_swift_fee;
-      const corrRb = c.corr_our_fee_rb;
-      const eurOnRoute = eurAfterGarna - garnaSwiftFee - corrRb;
-      const bsbFee = eurOnRoute * c.bsb_in_pct;
-      const eurOnAccount = eurOnRoute - bsbFee;
-      const finalByn = eurOnAccount * c.bsb_buy_eur * (1 - c.npd);
+      const cardFee = c.garna_card_fx_fee;
+      const eurOnCard = eurAfterGarna - cardFee;
+      const finalByn = eurOnCard * c.bsb_buy_eur * (1 - c.npd);
       return {
         received_byn: finalByn,
         steps:[
           {label:'Garna комиссия при получении', detail:`${fmt(c.garna_pct*100,1)}%`, cost: garnaCut, ccy:'EUR'},
-          {label:'Garna: fee за SWIFT-вывод', cost: garnaSwiftFee, ccy:'EUR'},
-          {label:'Корр.банки (OUR, RB санкц-риск)', cost: corrRb, ccy:'EUR'},
-          {label:'Входящий SWIFT в БСБ', cost: bsbFee, ccy:'EUR'},
-          {label:'Конверсия EUR→BYN в БСБ', detail:`${fmt(c.bsb_buy_eur,4)} BYN/EUR`, cost:0},
+          ...(cardFee>0?[{label:'Garna fee за вывод на валютную карту', cost: cardFee, ccy:'EUR'}]:[]),
+          {label:'Конверсия EUR→BYN у подрядчика (БСБ)', detail:`${fmt(c.bsb_buy_eur,4)} BYN/EUR`, cost:0},
+          ...(c.npd>0?[{label:'НПД 10%', cost: finalByn/(1-c.npd)*c.npd, ccy:'BYN'}]:[])
+        ]
+      };
+    }
+  },
+  {
+    id:'aw_eur_garna_bynccard', group:'aw_eur', name:'Airwallex EUR → Garna → BYN-карта (Garna конвертирует)',
+    tag:'Garna → BYN-карта', sourceCcy:'EUR',
+    calc(eur, c) {
+      const garnaCut = eur * c.garna_pct;
+      const eurAfterGarna = eur - garnaCut;
+      const garnaRate = c.nbrb_eur * (1 - c.garna_fx_spread);
+      const bynAfterConv = eurAfterGarna * garnaRate;
+      const cardFee = c.garna_card_byn_fee;
+      const finalByn = (bynAfterConv - cardFee) * (1 - c.npd);
+      return {
+        received_byn: finalByn,
+        steps:[
+          {label:'Garna комиссия при получении', detail:`${fmt(c.garna_pct*100,1)}%`, cost: garnaCut, ccy:'EUR'},
+          {label:'Конверсия EUR→BYN у Garna', detail:`${fmt(garnaRate,4)} BYN/EUR`, cost:0},
+          ...(cardFee>0?[{label:'Garna fee за вывод на BYN-карту', cost: cardFee, ccy:'BYN'}]:[]),
+          ...(c.npd>0?[{label:'НПД 10%', cost: finalByn/(1-c.npd)*c.npd, ccy:'BYN'}]:[])
+        ]
+      };
+    }
+  },
+  {
+    id:'aw_eur_garna_swift', group:'aw_eur', name:'Airwallex EUR → Garna → SWIFT в BYN',
+    tag:'Garna → SWIFT', sourceCcy:'EUR',
+    calc(eur, c) {
+      const garnaCut = eur * c.garna_pct;
+      const eurAfterGarna = eur - garnaCut;
+      const garnaRate = c.nbrb_eur * (1 - c.garna_fx_spread);
+      const bynAfterConv = eurAfterGarna * garnaRate;
+      const swiftFee = c.garna_swift_byn_fee;
+      const corrRb = c.corr_our_fee_rb_byn;
+      const bynOnRoute = bynAfterConv - swiftFee - corrRb;
+      const bsbInFee = Math.max(c.bsb_in_min, bynOnRoute * c.bsb_in_pct);
+      const finalByn = (bynOnRoute - bsbInFee) * (1 - c.npd);
+      return {
+        received_byn: finalByn,
+        steps:[
+          {label:'Garna комиссия при получении', detail:`${fmt(c.garna_pct*100,1)}%`, cost: garnaCut, ccy:'EUR'},
+          {label:'Конверсия EUR→BYN у Garna', detail:`${fmt(garnaRate,4)} BYN/EUR`, cost:0},
+          {label:'Garna: fee за SWIFT-вывод в BYN', cost: swiftFee, ccy:'BYN'},
+          {label:'Корр.банки RB (санкц-риск)', cost: corrRb, ccy:'BYN'},
+          {label:'Входящий SWIFT в БСБ', cost: bsbInFee, ccy:'BYN'},
           ...(c.npd>0?[{label:'НПД 10%', cost: finalByn/(1-c.npd)*c.npd, ccy:'BYN'}]:[])
         ]
       };
