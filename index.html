@@ -48,9 +48,12 @@
       <h1 class="text-[22px] font-semibold tracking-tight leading-none">Payment Hub</h1>
       <p class="text-[12px] text-ink-500 mt-1">Прогноз стоимости переводов 🇰🇿 → 🇧🇾 и 🇬🇧 → 🇧🇾</p>
     </div>
-    <div class="flex items-center gap-3">
-      <div id="ratesStatus" class="text-[11px] text-ink-500">Курсы: загрузка…</div>
+    <div class="flex items-center gap-2 flex-wrap">
+      <div id="ratesStatus" class="text-[11px] text-ink-500 mr-1">Курсы: загрузка…</div>
       <button id="reloadRates" class="text-[11px] px-2.5 py-1 rounded-md border border-ink-200 hover:border-brand-500 hover:text-brand-600 transition">Обновить курсы</button>
+      <button id="exportBtn" title="Скачать все ваши курсы и комиссии в JSON-файл" class="text-[11px] px-2.5 py-1 rounded-md border border-ink-200 hover:border-brand-500 hover:text-brand-600 transition">⬇ Экспорт</button>
+      <button id="importBtn" title="Загрузить JSON-файл с настройками" class="text-[11px] px-2.5 py-1 rounded-md border border-ink-200 hover:border-brand-500 hover:text-brand-600 transition">⬆ Импорт</button>
+      <input type="file" id="importFile" accept="application/json,.json" class="hidden"/>
     </div>
   </header>
 
@@ -1161,6 +1164,49 @@ $('mode').addEventListener('change', () => {
 });
 $('npdOn').addEventListener('change', renderAll);
 $('reloadRates').addEventListener('click', fetchRates);
+
+// ============ EXPORT / IMPORT ============
+$('exportBtn').addEventListener('click', () => {
+  const data = { version: 1, exportedAt: new Date().toISOString(), values: {} };
+  INPUTS.forEach(id => { if ($(id)) data.values[id] = $(id).value; });
+  data.mode = $('mode').value;
+  data.npdOn = $('npdOn').checked;
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `payment-hub-settings-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+$('importBtn').addEventListener('click', () => $('importFile').click());
+
+$('importFile').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if (!data.values) throw new Error('нет поля values');
+    let count = 0;
+    Object.entries(data.values).forEach(([id, v]) => {
+      if ($(id)) { $(id).value = v; count++; }
+    });
+    if (data.mode && $('mode')) $('mode').value = data.mode;
+    if (typeof data.npdOn === 'boolean' && $('npdOn')) $('npdOn').checked = data.npdOn;
+    $('targetWrap').hidden = $('mode').value !== 'to-target';
+    renderAll();
+    alert(`Импортировано ${count} значений.`);
+  } catch (err) {
+    alert('Не удалось прочитать файл: ' + err.message);
+  } finally {
+    e.target.value = '';
+  }
+});
 
 loadState();
 $('targetWrap').hidden = $('mode').value !== 'to-target';
