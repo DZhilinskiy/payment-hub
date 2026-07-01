@@ -193,11 +193,11 @@
     </details>
 
     <!-- КАНАЛЫ / КОМИССИИ -->
-    <details class="p-5">
+    <details open class="p-5">
       <summary class="flex items-center justify-between">
         <div>
           <div class="text-[15px] font-semibold tracking-tight">Комиссии и параметры каналов</div>
-          <div class="text-xs text-ink-500 mt-0.5">SWIFT, BSB-link, Airwallex, Garna, входящие в BY.</div>
+          <div class="text-xs text-ink-500 mt-0.5">SWIFT, BSB-link (в разбивке), Airwallex, Garna, входящие в BY.</div>
         </div>
         <span class="chev text-ink-400 text-lg">›</span>
       </summary>
@@ -216,10 +216,13 @@
         </div>
 
         <div>
-          <div class="text-xs font-semibold text-ink-500 uppercase tracking-wider mb-2">BSB-link (карта из БЦК)</div>
+          <div class="text-xs font-semibold text-ink-500 uppercase tracking-wider mb-2">BSB-link (карта из БЦК) — разбивка потерь</div>
           <div class="space-y-2">
-            <div class="flex items-center gap-2"><span class="w-40 text-xs text-ink-500">Суммарные потери, %</span><input type="number" step="0.1" id="bsb_link_loss" value="3.5" class="flex-1 px-2 py-1.5 border border-ink-200 rounded-md num text-right"/></div>
-            <div class="text-[11px] text-ink-400">visa+bepaid+БСБ. Подтверждено: 100 USD → 96,5 USD.</div>
+            <div class="flex items-center gap-2"><span class="w-40 text-xs text-ink-500">Visa/MC interchange, %</span><input type="number" step="0.1" id="bsb_link_visa" value="1.5" class="flex-1 px-2 py-1.5 border border-ink-200 rounded-md num text-right"/></div>
+            <div class="flex items-center gap-2"><span class="w-40 text-xs text-ink-500">Bepaid, %</span><input type="number" step="0.1" id="bsb_link_bepaid" value="1.0" class="flex-1 px-2 py-1.5 border border-ink-200 rounded-md num text-right"/></div>
+            <div class="flex items-center gap-2"><span class="w-40 text-xs text-ink-500">БСБ (конверсия/спред), %</span><input type="number" step="0.1" id="bsb_link_bsb" value="1.0" class="flex-1 px-2 py-1.5 border border-ink-200 rounded-md num text-right"/></div>
+            <div class="flex items-center gap-2"><span class="w-40 text-xs text-ink-500">Сумма</span><span id="bsb_link_sum" class="flex-1 text-right text-brand-700 font-semibold num">3.5%</span></div>
+            <div class="text-[11px] text-ink-400">Подтверждено фактом: 100 USD → 96,5 USD (3.5% суммарно). Разбивка ориентировочная — правьте по факту выписки.</div>
           </div>
 
           <div class="text-xs font-semibold text-ink-500 uppercase tracking-wider mt-4 mb-2">Входящий SWIFT в BY (%)</div>
@@ -259,6 +262,13 @@
     <div class="flex flex-wrap items-end justify-between gap-3 mb-3">
       <h2 class="text-[15px] font-semibold tracking-tight">Сценарии — сколько дойдёт до получателя в BYN</h2>
       <div class="text-xs text-ink-500">Отсортированы по итогу в BYN (лучший наверху).</div>
+    </div>
+
+    <div class="mb-4 rounded-lg border border-amber-200 bg-amber-50/60 px-4 py-2.5 text-[12px] text-amber-900 flex items-start gap-2">
+      <span class="text-amber-500 text-base leading-none">ℹ</span>
+      <div>
+        <b>Ограничение БЦК:</b> SWIFT-переводы в USD/EUR (и ещё нескольких валютах) недоступны для получателей — граждан РБ и РФ. Поэтому из USD/EUR-счёта БЦК возможен только вывод через <b>BSB-link</b>. SWIFT из БЦК доступен только в BYN (после закупки BYN на свой счёт).
+      </div>
     </div>
 
     <div id="scenariosContainer" class="space-y-6"></div>
@@ -308,7 +318,7 @@ const INPUTS = ['bal_bcc_kzt','bal_bcc_usd','bal_bcc_eur','bal_aw_usd','bal_aw_e
   'bcc_buy_usd_app','bcc_buy_usd_card','bcc_buy_eur_app','bcc_buy_byn_app','bcc_sell_usd','bcc_sell_eur',
   'bsb_buy_usd','bsb_buy_eur','prior_buy_usd','prior_buy_eur',
   'bcc_swift_byn_fee','bcc_swift_fx_pct','bcc_swift_fx_min','bcc_swift_fx_max','corr_our_fee',
-  'bsb_link_loss','bsb_in_pct','prior_in_pct','bsb_in_min',
+  'bsb_link_visa','bsb_link_bepaid','bsb_link_bsb','bsb_in_pct','prior_in_pct','bsb_in_min',
   'garna_pct','garna_fx_spread','garna_card_spread','aw_swift_fee','aw_fx_markup'];
 
 function loadState() {
@@ -348,7 +358,10 @@ function ctx() {
     bcc_swift_fx_min: num('bcc_swift_fx_min'),
     bcc_swift_fx_max: num('bcc_swift_fx_max'),
     corr_our_fee: num('corr_our_fee'),
-    bsb_link_loss: num('bsb_link_loss')/100,
+    bsb_link_visa_pct: num('bsb_link_visa')/100,
+    bsb_link_bepaid_pct: num('bsb_link_bepaid')/100,
+    bsb_link_bsb_pct: num('bsb_link_bsb')/100,
+    bsb_link_loss: (num('bsb_link_visa') + num('bsb_link_bepaid') + num('bsb_link_bsb'))/100,
     bsb_in_pct: num('bsb_in_pct')/100,
     prior_in_pct: num('prior_in_pct')/100,
     bsb_in_min: num('bsb_in_min'),
@@ -479,48 +492,7 @@ const SCENARIOS = [
       };
     }
   },
-  {
-    id:'usd_swift_bsb', group:'bcc_usd', name:'USD → SWIFT в БСБ (валюта) → конверсия',
-    tag:'SWIFT', sourceCcy:'USD',
-    calc(usd, c) {
-      const bccFee = bccSwiftFxFee(c, usd);
-      const usdAfterBcc = usd - bccFee - c.corr_our_fee;
-      const bsbFeeUsd = usdAfterBcc * c.bsb_in_pct;
-      const usdAfterBsb = usdAfterBcc - bsbFeeUsd;
-      const finalByn = usdAfterBsb * c.bsb_buy_usd * (1 - c.npd);
-      return {
-        received_byn: finalByn,
-        steps:[
-          {label:'БЦК SWIFT комиссия', detail:`${fmt(c.bcc_swift_fx_pct*100,2)}% (мин ${c.bcc_swift_fx_min}, макс ${c.bcc_swift_fx_max})`, cost: bccFee, ccy:'USD'},
-          {label:'Корр.банки (OUR)', cost: c.corr_our_fee, ccy:'USD'},
-          {label:'Входящий SWIFT БСБ', detail:`${fmt(c.bsb_in_pct*100,1)}%`, cost: bsbFeeUsd, ccy:'USD'},
-          {label:'Конверсия USD→BYN в БСБ', detail:`${fmt(c.bsb_buy_usd,4)} BYN/USD`, cost:0},
-          ...(c.npd>0?[{label:'НПД 10%', cost: finalByn/(1-c.npd)*c.npd, ccy:'BYN'}]:[])
-        ]
-      };
-    }
-  },
-  {
-    id:'usd_swift_prior', group:'bcc_usd', name:'USD → SWIFT в Приорбанк → конверсия',
-    tag:'SWIFT', sourceCcy:'USD',
-    calc(usd, c) {
-      const bccFee = bccSwiftFxFee(c, usd);
-      const usdAfterBcc = usd - bccFee - c.corr_our_fee;
-      const priorFeeUsd = usdAfterBcc * c.prior_in_pct;
-      const usdAfterPrior = usdAfterBcc - priorFeeUsd;
-      const finalByn = usdAfterPrior * c.prior_buy_usd * (1 - c.npd);
-      return {
-        received_byn: finalByn,
-        steps:[
-          {label:'БЦК SWIFT комиссия', cost: bccFee, ccy:'USD'},
-          {label:'Корр.банки (OUR)', cost: c.corr_our_fee, ccy:'USD'},
-          {label:'Входящий SWIFT Приорбанк', detail:`${fmt(c.prior_in_pct*100,1)}%`, cost: priorFeeUsd, ccy:'USD'},
-          {label:'Конверсия USD→BYN в Приорбанке', detail:`${fmt(c.prior_buy_usd,4)} BYN/USD`, cost:0},
-          ...(c.npd>0?[{label:'НПД 10%', cost: finalByn/(1-c.npd)*c.npd, ccy:'BYN'}]:[])
-        ]
-      };
-    }
-  },
+  // (SWIFT USD/EUR из БЦК в BY отсутствует — БЦК ограничивает SWIFT в этих валютах для получателей-граждан РБ/РФ)
 
   // ============ ИЗ EUR (БЦК) ============
   {
@@ -539,27 +511,7 @@ const SCENARIOS = [
       };
     }
   },
-  {
-    id:'eur_swift_bsb', group:'bcc_eur', name:'EUR → SWIFT в БСБ → конверсия',
-    tag:'SWIFT', sourceCcy:'EUR',
-    calc(eur, c) {
-      const bccFee = bccSwiftFxFee(c, eur);
-      const eurAfterBcc = eur - bccFee - c.corr_our_fee;
-      const bsbFeeEur = eurAfterBcc * c.bsb_in_pct;
-      const eurAfterBsb = eurAfterBcc - bsbFeeEur;
-      const finalByn = eurAfterBsb * c.bsb_buy_eur * (1 - c.npd);
-      return {
-        received_byn: finalByn,
-        steps:[
-          {label:'БЦК SWIFT комиссия', cost: bccFee, ccy:'EUR'},
-          {label:'Корр.банки (OUR)', cost: c.corr_our_fee, ccy:'EUR'},
-          {label:'Входящий SWIFT БСБ', cost: bsbFeeEur, ccy:'EUR'},
-          {label:'Конверсия EUR→BYN в БСБ', detail:`${fmt(c.bsb_buy_eur,4)} BYN/EUR`, cost:0},
-          ...(c.npd>0?[{label:'НПД 10%', cost: finalByn/(1-c.npd)*c.npd, ccy:'BYN'}]:[])
-        ]
-      };
-    }
-  },
+  // (аналогично: SWIFT EUR из БЦК недоступен для получателей-граждан РБ)
 
   // ============ ИЗ AIRWALLEX (UK) ============
   {
@@ -788,12 +740,53 @@ function renderScenarios() {
 function renderCard(r, i, group, bestByn) {
   const c = ctx();
   const isBest = i === 0;
-  const isWorst = i === (r.__isLast ? true : false);
   const badge = isBest
     ? '<span class="chip bg-brand-50 text-brand-700">Лучший</span>'
     : `<span class="chip bg-ink-100 text-ink-600">#${i+1}</span>`;
   const rel = bestByn > 0 ? (r.received_byn / bestByn - 1) * 100 : 0;
   const relText = i === 0 ? 'база' : `${rel >= 0 ? '+' : ''}${fmt(rel,2)}%`;
+
+  // Пересчёт всех потерь в BYN эквивалент через ~НБРБ курс исходной валюты
+  const srcToBynRate = r.s.sourceCcy === 'USD' ? c.nbrb_usd
+                     : r.s.sourceCcy === 'EUR' ? c.nbrb_eur
+                     : r.s.sourceCcy === 'KZT' ? (c.nbk_byn ? 1/c.nbk_byn : 0)
+                     : 1;
+  const stepsInByn = r.steps.filter(s => s.cost > 0).map(s => {
+    let byn = 0;
+    if (s.ccy === 'BYN') byn = s.cost;
+    else if (s.ccy === 'USD') byn = s.cost * c.nbrb_usd;
+    else if (s.ccy === 'EUR') byn = s.cost * c.nbrb_eur;
+    else if (s.ccy === 'KZT') byn = c.nbk_byn ? s.cost / c.nbk_byn : 0;
+    return { ...s, byn };
+  });
+  const totalStart = r.received_byn + stepsInByn.reduce((a, s) => a + s.byn, 0);
+
+  // Waterfall segments (проценты от totalStart)
+  const PALETTE = ['#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#0ea5e9', '#c88728', '#84cc16'];
+  const segments = stepsInByn.map((s, idx) => ({
+    label: s.label, byn: s.byn, pct: totalStart > 0 ? s.byn / totalStart * 100 : 0,
+    color: PALETTE[idx % PALETTE.length]
+  }));
+  const receivedPct = totalStart > 0 ? r.received_byn / totalStart * 100 : 0;
+
+  const waterfallSvg = totalStart > 0 ? `
+    <svg viewBox="0 0 100 6" preserveAspectRatio="none" class="w-full h-2.5 rounded overflow-hidden mt-3">
+      ${(() => {
+        let x = 0;
+        const parts = [`<rect x="0" y="0" width="${receivedPct}" height="6" fill="#0e7c4a"><title>Дошло: ${fmt(r.received_byn,2)} BYN (${fmt(receivedPct,1)}%)</title></rect>`];
+        x = receivedPct;
+        segments.forEach(seg => {
+          parts.push(`<rect x="${x}" y="0" width="${seg.pct}" height="6" fill="${seg.color}"><title>${seg.label}: ${fmt(seg.byn,2)} BYN (${fmt(seg.pct,2)}%)</title></rect>`);
+          x += seg.pct;
+        });
+        return parts.join('');
+      })()}
+    </svg>
+    <div class="flex items-center gap-2 text-[10px] text-ink-500 mt-1.5 flex-wrap">
+      <span class="flex items-center gap-1"><span class="inline-block w-2 h-2 rounded-sm" style="background:#0e7c4a"></span>дошло ${fmt(receivedPct,1)}%</span>
+      ${segments.map(s => `<span class="flex items-center gap-1"><span class="inline-block w-2 h-2 rounded-sm" style="background:${s.color}"></span>${s.label.replace(/^Конверсия.*/,'конв.').replace(/входящий\s+SWIFT/i,'вх.SWIFT').replace(/комиссия/i,'ком.').substring(0,22)} ${fmt(s.pct,1)}%</span>`).join('')}
+    </div>
+  ` : '';
 
   const stepsHtml = r.steps.map(step => {
     const costStr = step.cost > 0 ? `−${fmt(step.cost, step.ccy==='KZT'?0:2)} ${step.ccy}` : '';
@@ -828,8 +821,10 @@ function renderCard(r, i, group, bestByn) {
         Эфф. курс: <span class="num">${fmt(effRate, 4)} BYN/${r.s.sourceCcy}</span> · vs лучший: <span class="${rel<0?'text-warn-500':'text-brand-700'}">${relText}</span>
       </div>
 
+      ${waterfallSvg}
+
       <details class="mt-3">
-        <summary class="text-[11px] text-ink-500 hover:text-brand-700">Разбивка комиссий</summary>
+        <summary class="text-[11px] text-ink-500 hover:text-brand-700">Разбивка комиссий (в исходной валюте)</summary>
         <div class="mt-2">${stepsHtml}</div>
       </details>
     </div>
@@ -890,6 +885,8 @@ async function fetchRates() {
 // ============ INIT ============
 function renderAll() {
   saveState();
+  const sumEl = $('bsb_link_sum');
+  if (sumEl) sumEl.textContent = fmt(num('bsb_link_visa') + num('bsb_link_bepaid') + num('bsb_link_bsb'), 2) + '%';
   renderScenarios();
 }
 
