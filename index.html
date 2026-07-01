@@ -734,19 +734,17 @@ function renderScenarios() {
     const best = results[0]?.received_byn || 0;
 
     const groupEl = document.createElement('div');
-    groupEl.className = 'bg-white border border-ink-200 rounded-xl p-5 shadow-[0_1px_2px_rgba(0,0,0,0.03)]';
+    groupEl.className = 'bg-white border border-ink-200 rounded-xl p-3 shadow-[0_1px_2px_rgba(0,0,0,0.03)]';
     groupEl.innerHTML = `
-      <div class="flex items-center justify-between mb-4">
+      <div class="flex items-center justify-between mb-2.5 px-1">
         <div class="flex items-center gap-2">
           <span class="text-base">${g.flag}</span>
-          <div>
-            <div class="text-sm font-semibold">${g.title}</div>
-            <div class="text-xs text-ink-500">${mode==='from-balance'?`Отправляем ${fmt0(sent)} ${g.ccy}`:`Нужно ${fmt0(num('target_byn'))} BYN у получателя`}</div>
-          </div>
+          <div class="text-[12.5px] font-semibold">${g.title.replace(/^Счёт /,'').replace(/KZT/g,'₸').replace(/USD/g,'$').replace(/EUR/g,'€')}</div>
+          <div class="text-[10.5px] text-ink-400">${mode==='from-balance'?`отправляем ${fmt0(sent)} ${csym(g.ccy)}`:`цель ${fmt0(num('target_byn'))} Br`}</div>
         </div>
-        <div class="text-xs text-ink-500">${results.length} сценариев</div>
+        <div class="text-[10.5px] text-ink-400">${results.length} сценариев</div>
       </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+      <div class="space-y-1.5">
         ${results.map((r, i) => renderCard(r, i, g, best)).join('')}
       </div>
     `;
@@ -785,11 +783,11 @@ function renderScenarios() {
     return `
       <tr class="hover:bg-ink-50/50">
         <td class="py-2 pr-3 text-ink-400">${i+1}</td>
-        <td class="py-2 pr-3"><span class="mr-1">${r.group.flag}</span>${r.group.title.replace(/^Счёт /,'')}</td>
-        <td class="py-2 pr-3">${r.scen.name}${badge}</td>
-        <td class="py-2 pr-3 text-right">${fmt0(r.sent)} ${r.scen.sourceCcy}</td>
+        <td class="py-2 pr-3"><span class="mr-1">${r.group.flag}</span>${csym(r.group.ccy)}</td>
+        <td class="py-2 pr-3">${symName(r.scen.name)}${badge}</td>
+        <td class="py-2 pr-3 text-right">${fmt0(r.sent)} ${csym(r.scen.sourceCcy)}</td>
         <td class="py-2 pr-3 text-right font-semibold text-brand-700">${fmt(r.received,2)}</td>
-        <td class="py-2 pr-3 text-right ${lossVal>0?'text-warn-500':'text-ink-500'}">${fmt(lossVal,2)} ${r.scen.sourceCcy==='KZT'?'BYN':''}</td>
+        <td class="py-2 pr-3 text-right ${lossVal>0?'text-warn-500':'text-ink-500'}">${fmt(lossVal,2)} Br</td>
         <td class="py-2 pr-3 text-right ${lossPct>3?'text-warn-500':'text-ink-500'}">${fmt(lossPct,2)}%</td>
         <td class="py-2 pr-3 text-right">${fmt(r.effRate,4)}</td>
       </tr>
@@ -802,9 +800,6 @@ function renderScenarios() {
 function renderCard(r, i, group, bestByn) {
   const c = ctx();
   const isBest = i === 0;
-  const badge = isBest
-    ? '<span class="chip bg-brand-50 text-brand-700">Лучший</span>'
-    : `<span class="chip bg-ink-100 text-ink-600">#${i+1}</span>`;
   const rel = bestByn > 0 ? (r.received_byn / bestByn - 1) * 100 : 0;
   const relText = i === 0 ? 'база' : `${rel >= 0 ? '+' : ''}${fmt(rel,2)}%`;
 
@@ -851,7 +846,7 @@ function renderCard(r, i, group, bestByn) {
   ` : '';
 
   const stepsHtml = r.steps.map(step => {
-    const costStr = step.cost > 0 ? `−${fmt(step.cost, step.ccy==='KZT'?0:2)} ${step.ccy}` : '';
+    const costStr = step.cost > 0 ? `−${fmt(step.cost, step.ccy==='KZT'?0:2)} ${csym(step.ccy)}` : '';
     return `
       <div class="flex items-start justify-between text-[12px] py-1 border-b border-ink-100 last:border-0">
         <div>
@@ -866,32 +861,33 @@ function renderCard(r, i, group, bestByn) {
   const effRate = r.sent > 0 ? r.received_byn / r.sent : 0;
 
   return `
-    <div class="border ${isBest?'border-brand-500':'border-ink-200'} rounded-lg p-4 ${isBest?'bg-brand-50/40':''}">
-      <div class="flex items-start justify-between mb-2">
-        <div>
-          <div class="text-[13px] font-semibold leading-tight">${r.s.name}</div>
-          <div class="text-[11px] text-ink-400 mt-0.5">${r.s.tag}</div>
+    <details class="group border ${isBest?'border-brand-500':'border-ink-200'} rounded-lg overflow-hidden ${isBest?'bg-brand-50/40':''}">
+      <summary class="p-2.5 flex items-center gap-3 cursor-pointer hover:bg-ink-50/40">
+        <div class="w-4 text-[10px] ${isBest?'text-brand-500 font-bold':'text-ink-400'} text-right shrink-0">${isBest?'★':i+1}</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-[12px] font-medium truncate ${isBest?'text-brand-700 font-semibold':'text-ink-800'}">${symName(r.s.name)}</div>
+          <div class="text-[10px] text-ink-400 mt-0.5">${r.s.tag}</div>
         </div>
-        ${badge}
+        <div class="text-right shrink-0">
+          <div class="text-[14px] font-semibold num ${isBest?'text-brand-700':'text-ink-800'} leading-none">${fmt(r.received_byn, 2)}</div>
+          <div class="text-[10px] text-ink-400 num mt-0.5">Br/${csym(r.s.sourceCcy)} ${fmt(effRate, 4)}</div>
+        </div>
+        <div class="w-14 text-right text-[10.5px] ${rel<0?'text-warn-500':'text-brand-700'} num shrink-0">${relText}</div>
+        <span class="chev text-ink-300 shrink-0">›</span>
+      </summary>
+      <div class="p-3 border-t border-ink-100 bg-white/60">
+        ${waterfallSvg}
+        <div class="mt-3">${stepsHtml}</div>
       </div>
-
-      <div class="flex items-baseline gap-2 mt-3">
-        <div class="text-[22px] font-semibold text-brand-700 num">${fmt(r.received_byn, 2)}</div>
-        <div class="text-xs text-ink-500">BYN получателю</div>
-      </div>
-      <div class="text-[11px] text-ink-500 mt-0.5">
-        Эфф. курс: <span class="num">${fmt(effRate, 4)} BYN/${r.s.sourceCcy}</span> · vs лучший: <span class="${rel<0?'text-warn-500':'text-brand-700'}">${relText}</span>
-      </div>
-
-      ${waterfallSvg}
-
-      <details class="mt-3">
-        <summary class="text-[11px] text-ink-500 hover:text-brand-700">Разбивка комиссий (в исходной валюте)</summary>
-        <div class="mt-2">${stepsHtml}</div>
-      </details>
-    </div>
+    </details>
   `;
 }
+
+// ============ HELPERS ============
+const CCY_SYM = { KZT:'₸', USD:'$', EUR:'€', BYN:'Br', RUB:'₽' };
+const csym = (c) => CCY_SYM[c] || c;
+// Заменить в тексте сценария полные коды валют на знаки
+const symName = (name) => (name || '').replace(/\b(KZT|USD|EUR|BYN|RUB)\b/g, (m) => CCY_SYM[m]);
 
 // ============ DASHBOARD ============
 function renderDashboard(allResults, c, mode) {
@@ -945,37 +941,38 @@ function renderDashboard(allResults, c, mode) {
 
 function renderHero(best, second, gap, gapPct, lossVal, lossPct, totalScen) {
   const flag = best.group.flag;
+  const shortAccount = best.group.title.replace(/^Счёт /,'').replace(/KZT/g,'₸').replace(/USD/g,'$').replace(/EUR/g,'€');
   return `
-    <div class="rounded-2xl border border-brand-500/30 bg-gradient-to-br from-brand-50 via-white to-white p-6 shadow-[0_2px_8px_rgba(14,124,74,0.08)]">
+    <div class="rounded-2xl border border-brand-500/30 bg-gradient-to-br from-brand-50 via-white to-white p-5 shadow-[0_2px_8px_rgba(14,124,74,0.08)]">
       <div class="flex items-start justify-between gap-5 flex-wrap">
         <div class="min-w-0">
           <div class="flex items-center gap-2 text-[11px] uppercase tracking-wider font-semibold text-brand-700">
             <span class="w-1.5 h-1.5 rounded-full bg-brand-500 animate-pulse"></span>
             Лучший канал сейчас
           </div>
-          <div class="text-[20px] font-semibold mt-1.5 leading-tight">${best.s.name}</div>
+          <div class="text-[18px] font-semibold mt-1.5 leading-tight">${symName(best.s.name)}</div>
           <div class="text-xs text-ink-500 mt-0.5">
-            <span class="mr-1">${flag}</span>${best.group.title} · отправляем <b class="text-ink-800 num">${fmt0(best.sent)} ${best.s.sourceCcy}</b>
+            <span class="mr-1">${flag}</span>${shortAccount} · отправляем <b class="text-ink-800 num">${fmt0(best.sent)} ${csym(best.s.sourceCcy)}</b>
           </div>
         </div>
         <div class="text-right">
-          <div class="text-[48px] font-bold text-brand-700 leading-none num tracking-tight">${fmt(best.received_byn, 2)}</div>
-          <div class="text-[11px] text-ink-500 mt-1 uppercase tracking-wider">BYN получателю</div>
+          <div class="text-[40px] font-bold text-brand-700 leading-none num tracking-tight">${fmt(best.received_byn, 2)}</div>
+          <div class="text-[11px] text-ink-500 mt-1 uppercase tracking-wider">Br получателю</div>
         </div>
       </div>
 
-      <div class="mt-5 pt-4 border-t border-brand-500/20 grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+      <div class="mt-4 pt-3.5 border-t border-brand-500/20 grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
         <div>
           <div class="text-[10px] uppercase tracking-wider text-ink-400 mb-1">Эфф. курс</div>
-          <div class="text-sm font-semibold num">${fmt(best.effRate, 4)}<span class="text-[10px] text-ink-400 font-normal ml-0.5">BYN/${best.s.sourceCcy}</span></div>
+          <div class="text-sm font-semibold num">${fmt(best.effRate, 4)}<span class="text-[10px] text-ink-400 font-normal ml-0.5">Br/${csym(best.s.sourceCcy)}</span></div>
         </div>
         <div>
-          <div class="text-[10px] uppercase tracking-wider text-ink-400 mb-1">Потери vs кросс-курс НБ</div>
+          <div class="text-[10px] uppercase tracking-wider text-ink-400 mb-1">Потери vs курс НБ</div>
           <div class="text-sm font-semibold text-warn-500 num">−${fmt(lossPct, 2)}%</div>
         </div>
         <div>
           <div class="text-[10px] uppercase tracking-wider text-ink-400 mb-1">Отрыв от №2</div>
-          <div class="text-sm font-semibold text-brand-700 num">${gap > 0 ? '+' : ''}${fmt(gap, 2)} BYN <span class="text-[10px] text-ink-400 font-normal">(${fmt(gapPct,2)}%)</span></div>
+          <div class="text-sm font-semibold text-brand-700 num">${gap > 0 ? '+' : ''}${fmt(gap, 2)} Br <span class="text-[10px] text-ink-400 font-normal">(${fmt(gapPct,2)}%)</span></div>
         </div>
         <div>
           <div class="text-[10px] uppercase tracking-wider text-ink-400 mb-1">Всего просчитано</div>
@@ -991,25 +988,28 @@ function renderBarChart(sorted, best, worst) {
   const worstVal = worst.received_byn;
   const span = bestVal - worstVal || 1;
 
+  // Normalize bars: scale by delta between worst and best, so short bars still readable
+  const barMin = Math.min(worstVal, bestVal * 0.7); // не даём хвосту сжиматься в ноль
+  const barSpan = Math.max(1, bestVal - barMin);
   const bars = sorted.map((r, i) => {
     const isBest = i === 0;
     const isSelected = r.s.id === (selectedScenarioId || best.s.id);
-    const widthPct = bestVal > 0 ? (r.received_byn / bestVal) * 100 : 0;
+    const widthPct = bestVal > 0 ? Math.max(6, ((r.received_byn - barMin) / barSpan) * 100) : 0;
     const rel = bestVal > 0 ? (r.received_byn / bestVal - 1) * 100 : 0;
-    const color = isBest ? 'bg-brand-500' : (rel > -3 ? 'bg-brand-400/70' : rel > -8 ? 'bg-amber-400/70' : 'bg-warn-500/60');
+    const color = isBest ? 'bg-brand-500' : (rel > -3 ? 'bg-brand-400' : rel > -8 ? 'bg-amber-400' : 'bg-warn-500/70');
     return `
       <button data-scenario-id="${r.s.id}"
         class="w-full text-left group hover:bg-ink-50/60 rounded px-2 py-1 transition ${isSelected?'bg-ink-50':''}">
         <div class="flex items-center gap-3">
           <div class="w-4 text-[10px] text-ink-400 text-right">${i+1}</div>
-          <div class="w-56 truncate text-[12px] ${isBest?'font-semibold':''} ${isSelected?'text-brand-700':'text-ink-700'}">
-            <span class="mr-1">${r.group.flag}</span>${r.s.name}
+          <div class="w-52 truncate text-[12px] ${isBest?'font-semibold':''} ${isSelected?'text-brand-700':'text-ink-700'}">
+            <span class="mr-1">${r.group.flag}</span>${symName(r.s.name)}
           </div>
-          <div class="flex-1 relative h-5">
+          <div class="flex-1 relative h-3">
             <div class="absolute inset-y-0 left-0 rounded-sm ${color} transition-all" style="width:${widthPct}%"></div>
-            <div class="absolute inset-y-0 left-2 flex items-center text-[11px] text-white font-semibold num pointer-events-none" style="text-shadow:0 1px 1px rgba(0,0,0,0.2)">${fmt(r.received_byn, 2)}</div>
           </div>
-          <div class="w-20 text-right text-[11px] num ${rel < 0 ? 'text-warn-500' : 'text-ink-400'}">${i===0?'база':`${fmt(rel,2)}%`}</div>
+          <div class="w-24 text-right text-[13px] font-semibold num ${isBest?'text-brand-700':'text-ink-800'}">${fmt(r.received_byn, 2)}</div>
+          <div class="w-14 text-right text-[10.5px] num ${rel < 0 ? 'text-warn-500' : 'text-ink-400'}">${i===0?'база':`${fmt(rel,1)}%`}</div>
         </div>
       </button>
     `;
@@ -1041,7 +1041,7 @@ function renderFlow(r, c) {
   let currentAmount = startAmount;
   let currentCcy = startCcy;
 
-  nodes.push({ label: `${r.group.flag} ${r.group.title.replace(/^Счёт /, '')}`, amount: currentAmount, ccy: currentCcy, sub: 'старт' });
+  nodes.push({ label: `${r.group.flag} ${r.group.title.replace(/^Счёт /, '').replace(/KZT/g,'₸').replace(/USD/g,'$').replace(/EUR/g,'€')}`, amount: currentAmount, ccy: currentCcy, sub: 'старт' });
 
   r.steps.forEach((step, idx) => {
     if (step.label.toLowerCase().includes('конверс')) {
@@ -1058,7 +1058,7 @@ function renderFlow(r, c) {
         return;
       }
     }
-    const feeLabel = step.cost > 0 ? `−${fmt(step.cost, step.ccy==='KZT'?0:2)} ${step.ccy}` : '';
+    const feeLabel = step.cost > 0 ? `−${fmt(step.cost, step.ccy==='KZT'?0:2)} ${csym(step.ccy)}` : '';
     if (step.cost > 0 && step.ccy === currentCcy) {
       currentAmount -= step.cost;
     } else if (step.cost > 0 && step.ccy === 'BYN' && currentCcy !== 'BYN') {
@@ -1078,10 +1078,10 @@ function renderFlow(r, c) {
     const isFinal = n.isFinal;
     return `
       <div class="flex-shrink-0 flex flex-col items-center relative">
-        <div class="min-w-[130px] max-w-[180px] rounded-lg border ${isFinal?'border-brand-500 bg-brand-50':'border-ink-200 bg-white'} px-3 py-2 text-center shadow-sm">
-          <div class="text-[10px] uppercase tracking-wider ${isFinal?'text-brand-700':'text-ink-400'} truncate">${n.label}</div>
-          <div class="text-[15px] font-semibold num ${isFinal?'text-brand-700':'text-ink-800'} mt-0.5">${fmt(n.amount, n.ccy==='KZT'?0:2)}</div>
-          <div class="text-[10px] text-ink-400 uppercase tracking-wider">${n.ccy}</div>
+        <div class="min-w-[120px] max-w-[170px] rounded-lg border ${isFinal?'border-brand-500 bg-brand-50':'border-ink-200 bg-white'} px-2.5 py-2 text-center shadow-sm">
+          <div class="text-[9.5px] uppercase tracking-wider ${isFinal?'text-brand-700':'text-ink-400'} truncate">${n.label}</div>
+          <div class="text-[14px] font-semibold num ${isFinal?'text-brand-700':'text-ink-800'} mt-0.5">${fmt(n.amount, n.ccy==='KZT'?0:2)}</div>
+          <div class="text-[10px] text-ink-400 uppercase tracking-wider">${csym(n.ccy)}</div>
         </div>
       </div>
     `;
@@ -1107,7 +1107,7 @@ function renderFlow(r, c) {
     <div id="flowBox" class="mt-4 bg-white border border-ink-200 rounded-xl p-5 shadow-[0_1px_2px_rgba(0,0,0,0.03)]">
       <div class="flex items-center justify-between mb-4">
         <div>
-          <div class="text-sm font-semibold">Как идут деньги: <span class="text-brand-700">${r.s.name}</span></div>
+          <div class="text-sm font-semibold">Как идут деньги: <span class="text-brand-700">${symName(r.s.name)}</span></div>
           <div class="text-[11px] text-ink-500 mt-0.5">Каждая коробка — сумма после этапа. Стрелка — комиссия или конверсия. Кликайте другую полоску выше, чтобы посмотреть другой путь.</div>
         </div>
       </div>
