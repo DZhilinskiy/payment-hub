@@ -670,20 +670,28 @@ function renderScenarios() {
     const scenariosOfGroup = SCENARIOS.filter(s => s.group === gid);
     const cNoNpd = { ...c, npd: 0 };  // НПД считаем снаружи по правильной формуле
 
-    // Хелпер для правильного НПД: 10% от инвойса × курс НБРБ
-    const applyNpdPost = (rObj, sent, ccy) => {
+    // Хелпер для правильного НПД: 10% от суммы, реально поступившей подрядчику × курс НБРБ.
+    // Для UK-сценариев (через Garna) — комиссия Garna 3% ложится на плательщика, поэтому
+    // база = sent × (1 - garna_pct). Для БЦК-сценариев база = sent (нет промежуточного посредника).
+    const applyNpdPost = (rObj, sent, s) => {
       if (!(c.npd > 0)) return rObj;
+      const ccy = s.sourceCcy;
       const nbrbRate = ccy === 'USD' ? c.nbrb_usd
                      : ccy === 'EUR' ? c.nbrb_eur
                      : ccy === 'KZT' ? c.nbrb_kzt : 0;
-      const baseByn = sent * nbrbRate;
+      const isViaGarna = s.group === 'aw_usd' || s.group === 'aw_eur';
+      const netSent = isViaGarna ? sent * (1 - c.garna_pct) : sent;
+      const baseByn = netSent * nbrbRate;
       const npdCost = baseByn * c.npd;
+      const detail = isViaGarna
+        ? `база: ${fmt(baseByn, 2)} Br (${fmt(netSent, 2)} ${csym(ccy)} после Garna × ${fmt(nbrbRate, 4)})`
+        : `база: ${fmt(baseByn, 2)} Br (${fmt0(sent)} ${csym(ccy)} × ${fmt(nbrbRate, 4)})`;
       return {
         ...rObj,
         received_byn: rObj.received_byn - npdCost,
         steps: [...rObj.steps, {
-          label: 'НПД 10% (от инвойса × НБРБ)',
-          detail: `база: ${fmt(baseByn, 2)} Br (${fmt0(sent)} ${ccy} × ${fmt(nbrbRate, 4)})`,
+          label: 'НПД 10% (от суммы к получателю × НБРБ)',
+          detail,
           cost: npdCost, ccy: 'BYN'
         }]
       };
@@ -699,16 +707,18 @@ function renderScenarios() {
         const nbrbRateFor = s.sourceCcy === 'USD' ? c.nbrb_usd
                           : s.sourceCcy === 'EUR' ? c.nbrb_eur
                           : s.sourceCcy === 'KZT' ? c.nbrb_kzt : 0;
+        const isViaGarnaBS = s.group === 'aw_usd' || s.group === 'aw_eur';
         for (let i = 0; i < 60; i++) {
           const mid = (lo + hi) / 2;
           const rTmp = s.calc(mid, cNoNpd);
-          const netByn = rTmp.received_byn - (c.npd > 0 ? mid * nbrbRateFor * c.npd : 0);
+          const netSentBS = isViaGarnaBS ? mid * (1 - c.garna_pct) : mid;
+          const netByn = rTmp.received_byn - (c.npd > 0 ? netSentBS * nbrbRateFor * c.npd : 0);
           if (netByn < target) lo = mid; else hi = mid;
         }
         effectiveSent = hi;
       }
       let r = s.calc(effectiveSent, cNoNpd);
-      r = applyNpdPost(r, effectiveSent, s.sourceCcy);
+      r = applyNpdPost(r, effectiveSent, s);
       const effRate = effectiveSent > 0 ? r.received_byn / effectiveSent : 0;
       const nbrbRate = s.sourceCcy === 'USD' ? c.nbrb_usd
                      : s.sourceCcy === 'EUR' ? c.nbrb_eur
