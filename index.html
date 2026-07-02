@@ -387,17 +387,19 @@ const SCENARIOS = [
     id:'kzt_swift_bsb', group:'bcc_kzt', name:'KZT → купить BYN → SWIFT в БСБ',
     tag:'SWIFT ЕАЭС', sourceCcy:'KZT',
     calc(kzt, c) {
-      const bynBought = kzt / c.bcc_buy_byn_app;
+      // Вся сумма KZT конвертируется в BYN и уходит SWIFT'ом.
+      // Фикс за SWIFT (2500 ₸) списывается со счёта KZT ДОПОЛНИТЕЛЬНО, сверх суммы отправки.
+      const bynSent = kzt / c.bcc_buy_byn_app;
       const feeKzt = c.bcc_swift_byn_fee;
-      const bynAfterSwift = bynBought - feeKzt / c.bcc_buy_byn_app;
-      const bsbFee = Math.max(c.bsb_in_min, bynAfterSwift * c.bsb_in_pct);
-      const finalByn = (bynAfterSwift - bsbFee) * (1 - c.npd);
+      const bsbFee = Math.max(c.bsb_in_min, bynSent * c.bsb_in_pct);
+      const finalByn = (bynSent - bsbFee) * (1 - c.npd);
       return {
         received_byn: finalByn,
+        extra_source_cost: feeKzt,
         steps:[
-          {label:'Покупка BYN в БЦК (app)', detail:`курс ${fmt(c.bcc_buy_byn_app,2)} KZT/BYN`, cost:0},
-          {label:'Фикс за SWIFT (БЦК)', detail:'ЕАЭС', cost: feeKzt, ccy:'KZT'},
-          {label:'Входящий SWIFT (БСБ)', detail:`${fmt(c.bsb_in_pct*100,1)}% (мин ${c.bsb_in_min} BYN)`, cost: bsbFee, ccy:'BYN'},
+          {label:'Покупка BYN в БЦК', detail:`${fmt0(kzt)} ₸ ÷ ${fmt(c.bcc_buy_byn_app,2)} = ${fmt(bynSent,2)} Br`, cost:0, conversion:true, toCcy:'BYN', toAmount:bynSent},
+          {label:'Фикс за SWIFT (БЦК)', detail:'сверх суммы отправки', cost: feeKzt, ccy:'KZT', extra:true},
+          {label:'Входящий SWIFT (БСБ)', detail:`${fmt(c.bsb_in_pct*100,1)}% (мин ${c.bsb_in_min} Br)`, cost: bsbFee, ccy:'BYN'},
           ...(c.npd>0?[{label:'НПД 10%', cost: finalByn/(1-c.npd)*c.npd, ccy:'BYN'}]:[])
         ]
       };
@@ -407,16 +409,16 @@ const SCENARIOS = [
     id:'kzt_swift_prior', group:'bcc_kzt', name:'KZT → купить BYN → SWIFT в Приорбанк',
     tag:'SWIFT ЕАЭС', sourceCcy:'KZT',
     calc(kzt, c) {
-      const bynBought = kzt / c.bcc_buy_byn_app;
+      const bynSent = kzt / c.bcc_buy_byn_app;
       const feeKzt = c.bcc_swift_byn_fee;
-      const bynAfterSwift = bynBought - feeKzt / c.bcc_buy_byn_app;
-      const priorFee = bynAfterSwift * c.prior_in_pct;
-      const finalByn = (bynAfterSwift - priorFee) * (1 - c.npd);
+      const priorFee = bynSent * c.prior_in_pct;
+      const finalByn = (bynSent - priorFee) * (1 - c.npd);
       return {
         received_byn: finalByn,
+        extra_source_cost: feeKzt,
         steps:[
-          {label:'Покупка BYN в БЦК (app)', detail:`курс ${fmt(c.bcc_buy_byn_app,2)} KZT/BYN`, cost:0},
-          {label:'Фикс за SWIFT (БЦК)', cost: feeKzt, ccy:'KZT'},
+          {label:'Покупка BYN в БЦК', detail:`${fmt0(kzt)} ₸ ÷ ${fmt(c.bcc_buy_byn_app,2)} = ${fmt(bynSent,2)} Br`, cost:0, conversion:true, toCcy:'BYN', toAmount:bynSent},
+          {label:'Фикс за SWIFT (БЦК)', detail:'сверх суммы отправки', cost: feeKzt, ccy:'KZT', extra:true},
           {label:'Входящий SWIFT (Приорбанк)', detail:`${fmt(c.prior_in_pct*100,1)}%`, cost: priorFee, ccy:'BYN'},
           ...(c.npd>0?[{label:'НПД 10%', cost: finalByn/(1-c.npd)*c.npd, ccy:'BYN'}]:[])
         ]
@@ -723,7 +725,9 @@ function renderScenarios() {
       const nbrbRate = s.sourceCcy === 'USD' ? c.nbrb_usd
                      : s.sourceCcy === 'EUR' ? c.nbrb_eur
                      : s.sourceCcy === 'KZT' ? c.nbrb_kzt : 0;
-      const sentByn = effectiveSent * nbrbRate;
+      // Полная стоимость операции в BYN-эквиваленте: сумма отправки + доп.расходы в исходной валюте (напр. фикс SWIFT).
+      const extraSourceCost = r.extra_source_cost || 0;
+      const sentByn = (effectiveSent + extraSourceCost) * nbrbRate;
       return { s, sent: effectiveSent, sentByn, ...r, effRate, group: g };
     }).sort((a,b) => mode === 'to-target' ? a.sentByn - b.sentByn : b.received_byn - a.received_byn);
 
@@ -1076,25 +1080,32 @@ function renderFlow(r, c) {
   nodes.push({ label: `${r.group.flag} ${r.group.title.replace(/^Счёт /, '').replace(/KZT/g,'₸').replace(/USD/g,'$').replace(/EUR/g,'€')}`, amount: currentAmount, ccy: currentCcy, sub: 'старт' });
 
   r.steps.forEach((step, idx) => {
+    // Явная конверсия (шаг помечен conversion:true с полями toCcy/toAmount)
+    if (step.conversion && step.toAmount != null && step.toCcy) {
+      arrows.push({ label: step.label, fee: null, kind: 'convert' });
+      currentAmount = step.toAmount;
+      currentCcy = step.toCcy;
+      nodes.push({ label: step.label.replace(/^Покупка\s+|^Конверсия\s+/i,''), amount: currentAmount, ccy: currentCcy, sub: step.detail || '' });
+      return;
+    }
+    // Fallback: старый regex на «конверсия ... BYN/CCY»
     if (step.label.toLowerCase().includes('конверс')) {
-      // Currency conversion: extract rate from detail if possible
       const m = step.detail && step.detail.match(/([\d.,]+)\s*BYN\/(\w+)/);
       if (m) {
         const rate = parseFloat(m[1].replace(',', '.'));
-        const toCcy = 'BYN';
         const newAmount = currentAmount * rate;
         arrows.push({ label: `конверсия ×${fmt(rate, 4)}`, fee: null, kind: 'convert' });
         currentAmount = newAmount;
-        currentCcy = toCcy;
+        currentCcy = 'BYN';
         nodes.push({ label: step.label.replace(/^Конверсия\s+/i,''), amount: currentAmount, ccy: currentCcy, sub: step.detail || '' });
         return;
       }
     }
-    const feeLabel = step.cost > 0 ? `−${fmt(step.cost, step.ccy==='KZT'?0:2)} ${csym(step.ccy)}` : '';
-    if (step.cost > 0 && step.ccy === currentCcy) {
+    const isExtra = step.extra === true;
+    const feeLabel = step.cost > 0 ? `−${fmt(step.cost, step.ccy==='KZT'?0:2)} ${csym(step.ccy)}${isExtra?' (сверх)':''}` : '';
+    // Если extra=true — комиссия сверху, не вычитаем из currentAmount (она с другого «кармана»)
+    if (step.cost > 0 && !isExtra && step.ccy === currentCcy) {
       currentAmount -= step.cost;
-    } else if (step.cost > 0 && step.ccy === 'BYN' && currentCcy !== 'BYN') {
-      // BYN fee before conversion — skip modification (will affect final)
     }
     arrows.push({ label: step.label, fee: feeLabel, kind: 'fee' });
     if (step.ccy === currentCcy || step.cost === 0) {
