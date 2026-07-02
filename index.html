@@ -431,13 +431,14 @@ const SCENARIOS = [
     calc(kzt, c) {
       const usd = kzt / c.bcc_buy_usd_app;
       const usdAfterLink = usd * (1 - c.bsb_link_loss);
-      const finalByn = usdAfterLink * c.bsb_buy_usd * (1 - c.npd);
+      const bynFinal = usdAfterLink * c.bsb_buy_usd;
+      const finalByn = bynFinal * (1 - c.npd);
       return {
         received_byn: finalByn,
         steps:[
-          {label:'Покупка USD в БЦК', detail:`${fmt(c.bcc_buy_usd_app,2)} KZT/USD → ${fmt(usd,2)} USD`, cost:0},
+          {label:'Покупка USD в БЦК', detail:`${fmt0(kzt)} ₸ ÷ ${fmt(c.bcc_buy_usd_app,2)} = ${fmt(usd,2)} $`, cost:0, conversion:true, toCcy:'USD', toAmount:usd},
           {label:'BSB-link потери', detail:`${fmt(c.bsb_link_loss*100,1)}%`, cost: usd - usdAfterLink, ccy:'USD'},
-          {label:'Конверсия USD→BYN в БСБ', detail:`${fmt(c.bsb_buy_usd,4)} BYN/USD`, cost:0},
+          {label:'Конверсия USD→BYN в БСБ', detail:`${fmt(c.bsb_buy_usd,4)} Br/$`, cost:0, conversion:true, toCcy:'BYN', toAmount:bynFinal},
           ...(c.npd>0?[{label:'НПД 10%', cost: finalByn/(1-c.npd)*c.npd, ccy:'BYN'}]:[])
         ]
       };
@@ -449,13 +450,14 @@ const SCENARIOS = [
     calc(kzt, c) {
       const eur = kzt / c.bcc_buy_eur_app;
       const eurAfterLink = eur * (1 - c.bsb_link_loss);
-      const finalByn = eurAfterLink * c.bsb_buy_eur * (1 - c.npd);
+      const bynFinal = eurAfterLink * c.bsb_buy_eur;
+      const finalByn = bynFinal * (1 - c.npd);
       return {
         received_byn: finalByn,
         steps:[
-          {label:'Покупка EUR в БЦК (app)', detail:`${fmt(c.bcc_buy_eur_app,2)} KZT/EUR`, cost:0},
-          {label:'BSB-link потери', cost: eur - eurAfterLink, ccy:'EUR'},
-          {label:'Конверсия EUR→BYN в БСБ', detail:`${fmt(c.bsb_buy_eur,4)} BYN/EUR`, cost:0},
+          {label:'Покупка EUR в БЦК', detail:`${fmt0(kzt)} ₸ ÷ ${fmt(c.bcc_buy_eur_app,2)} = ${fmt(eur,2)} €`, cost:0, conversion:true, toCcy:'EUR', toAmount:eur},
+          {label:'BSB-link потери', detail:`${fmt(c.bsb_link_loss*100,1)}%`, cost: eur - eurAfterLink, ccy:'EUR'},
+          {label:'Конверсия EUR→BYN в БСБ', detail:`${fmt(c.bsb_buy_eur,4)} Br/€`, cost:0, conversion:true, toCcy:'BYN', toAmount:bynFinal},
           ...(c.npd>0?[{label:'НПД 10%', cost: finalByn/(1-c.npd)*c.npd, ccy:'BYN'}]:[])
         ]
       };
@@ -468,12 +470,13 @@ const SCENARIOS = [
     tag:'BSB-link', sourceCcy:'USD',
     calc(usd, c) {
       const usdAfterLink = usd * (1 - c.bsb_link_loss);
-      const finalByn = usdAfterLink * c.bsb_buy_usd * (1 - c.npd);
+      const bynFinal = usdAfterLink * c.bsb_buy_usd;
+      const finalByn = bynFinal * (1 - c.npd);
       return {
         received_byn: finalByn,
         steps:[
           {label:'BSB-link потери', detail:`${fmt(c.bsb_link_loss*100,1)}%`, cost: usd - usdAfterLink, ccy:'USD'},
-          {label:'Конверсия USD→BYN в БСБ', detail:`${fmt(c.bsb_buy_usd,4)} BYN/USD`, cost:0},
+          {label:'Конверсия USD→BYN в БСБ', detail:`${fmt(c.bsb_buy_usd,4)} Br/$`, cost:0, conversion:true, toCcy:'BYN', toAmount:bynFinal},
           ...(c.npd>0?[{label:'НПД 10%', cost: finalByn/(1-c.npd)*c.npd, ccy:'BYN'}]:[])
         ]
       };
@@ -487,12 +490,13 @@ const SCENARIOS = [
     tag:'BSB-link', sourceCcy:'EUR',
     calc(eur, c) {
       const eurAfterLink = eur * (1 - c.bsb_link_loss);
-      const finalByn = eurAfterLink * c.bsb_buy_eur * (1 - c.npd);
+      const bynFinal = eurAfterLink * c.bsb_buy_eur;
+      const finalByn = bynFinal * (1 - c.npd);
       return {
         received_byn: finalByn,
         steps:[
           {label:'BSB-link потери', detail:`${fmt(c.bsb_link_loss*100,1)}%`, cost: eur - eurAfterLink, ccy:'EUR'},
-          {label:'Конверсия EUR→BYN в БСБ', detail:`${fmt(c.bsb_buy_eur,4)} BYN/EUR`, cost:0},
+          {label:'Конверсия EUR→BYN в БСБ', detail:`${fmt(c.bsb_buy_eur,4)} Br/€`, cost:0, conversion:true, toCcy:'BYN', toAmount:bynFinal},
           ...(c.npd>0?[{label:'НПД 10%', cost: finalByn/(1-c.npd)*c.npd, ccy:'BYN'}]:[])
         ]
       };
@@ -515,14 +519,14 @@ const SCENARIOS = [
       const usdAfterGarna = usd - garnaCut;
       const cardFee = c.garna_card_fx_fee;
       const usdOnCard = usdAfterGarna - cardFee;
-      // Подрядчик сам конвертирует USD→BYN в БСБ по курсу покупки USD
-      const finalByn = usdOnCard * c.bsb_buy_usd * (1 - c.npd);
+      const bynFinal = usdOnCard * c.bsb_buy_usd;
+      const finalByn = bynFinal * (1 - c.npd);
       return {
         received_byn: finalByn,
         steps:[
           {label:'Garna комиссия при получении', detail:`${fmt(c.garna_pct*100,1)}%`, cost: garnaCut, ccy:'USD'},
           ...(cardFee>0?[{label:'Garna fee за вывод на валютную карту', cost: cardFee, ccy:'USD'}]:[]),
-          {label:'Конверсия USD→BYN у подрядчика (БСБ)', detail:`${fmt(c.bsb_buy_usd,4)} BYN/USD`, cost:0},
+          {label:'Конверсия USD→BYN у подрядчика (БСБ)', detail:`${fmt(c.bsb_buy_usd,4)} Br/$`, cost:0, conversion:true, toCcy:'BYN', toAmount:bynFinal},
           ...(c.npd>0?[{label:'НПД 10%', cost: finalByn/(1-c.npd)*c.npd, ccy:'BYN'}]:[])
         ]
       };
@@ -542,7 +546,7 @@ const SCENARIOS = [
         received_byn: finalByn,
         steps:[
           {label:'Garna комиссия при получении', detail:`${fmt(c.garna_pct*100,1)}%`, cost: garnaCut, ccy:'USD'},
-          {label:'Конверсия USD→BYN у Garna', detail:`${fmt(garnaRate,4)} BYN/USD (НБРБ − ${fmt(c.garna_fx_spread*100,2)}%)`, cost:0},
+          {label:'Конверсия USD→BYN у Garna', detail:`${fmt(garnaRate,4)} Br/$ (НБРБ − ${fmt(c.garna_fx_spread*100,2)}%)`, cost:0, conversion:true, toCcy:'BYN', toAmount:bynAfterConv},
           ...(cardFee>0?[{label:'Garna fee за вывод на BYN-карту', cost: cardFee, ccy:'BYN'}]:[]),
           ...(c.npd>0?[{label:'НПД 10%', cost: finalByn/(1-c.npd)*c.npd, ccy:'BYN'}]:[])
         ]
@@ -566,10 +570,10 @@ const SCENARIOS = [
         received_byn: finalByn,
         steps:[
           {label:'Garna комиссия при получении', detail:`${fmt(c.garna_pct*100,1)}%`, cost: garnaCut, ccy:'USD'},
-          {label:'Конверсия USD→BYN у Garna', detail:`${fmt(garnaRate,4)} BYN/USD`, cost:0},
+          {label:'Конверсия USD→BYN у Garna', detail:`${fmt(garnaRate,4)} Br/$`, cost:0, conversion:true, toCcy:'BYN', toAmount:bynAfterConv},
           {label:'Garna: fee за SWIFT-вывод в BYN', cost: swiftFee, ccy:'BYN'},
           {label:'Корр.банки RB (санкц-риск)', detail:'BYN идёт через рос. корр.', cost: corrRb, ccy:'BYN'},
-          {label:'Входящий SWIFT в БСБ', detail:`${fmt(c.bsb_in_pct*100,1)}% (мин ${c.bsb_in_min} BYN)`, cost: bsbInFee, ccy:'BYN'},
+          {label:'Входящий SWIFT в БСБ', detail:`${fmt(c.bsb_in_pct*100,1)}% (мин ${c.bsb_in_min} Br)`, cost: bsbInFee, ccy:'BYN'},
           ...(c.npd>0?[{label:'НПД 10%', cost: finalByn/(1-c.npd)*c.npd, ccy:'BYN'}]:[])
         ]
       };
@@ -583,13 +587,14 @@ const SCENARIOS = [
       const eurAfterGarna = eur - garnaCut;
       const cardFee = c.garna_card_fx_fee;
       const eurOnCard = eurAfterGarna - cardFee;
-      const finalByn = eurOnCard * c.bsb_buy_eur * (1 - c.npd);
+      const bynFinal = eurOnCard * c.bsb_buy_eur;
+      const finalByn = bynFinal * (1 - c.npd);
       return {
         received_byn: finalByn,
         steps:[
           {label:'Garna комиссия при получении', detail:`${fmt(c.garna_pct*100,1)}%`, cost: garnaCut, ccy:'EUR'},
           ...(cardFee>0?[{label:'Garna fee за вывод на валютную карту', cost: cardFee, ccy:'EUR'}]:[]),
-          {label:'Конверсия EUR→BYN у подрядчика (БСБ)', detail:`${fmt(c.bsb_buy_eur,4)} BYN/EUR`, cost:0},
+          {label:'Конверсия EUR→BYN у подрядчика (БСБ)', detail:`${fmt(c.bsb_buy_eur,4)} Br/€`, cost:0, conversion:true, toCcy:'BYN', toAmount:bynFinal},
           ...(c.npd>0?[{label:'НПД 10%', cost: finalByn/(1-c.npd)*c.npd, ccy:'BYN'}]:[])
         ]
       };
@@ -609,7 +614,7 @@ const SCENARIOS = [
         received_byn: finalByn,
         steps:[
           {label:'Garna комиссия при получении', detail:`${fmt(c.garna_pct*100,1)}%`, cost: garnaCut, ccy:'EUR'},
-          {label:'Конверсия EUR→BYN у Garna', detail:`${fmt(garnaRate,4)} BYN/EUR`, cost:0},
+          {label:'Конверсия EUR→BYN у Garna', detail:`${fmt(garnaRate,4)} Br/€`, cost:0, conversion:true, toCcy:'BYN', toAmount:bynAfterConv},
           ...(cardFee>0?[{label:'Garna fee за вывод на BYN-карту', cost: cardFee, ccy:'BYN'}]:[]),
           ...(c.npd>0?[{label:'НПД 10%', cost: finalByn/(1-c.npd)*c.npd, ccy:'BYN'}]:[])
         ]
@@ -633,7 +638,7 @@ const SCENARIOS = [
         received_byn: finalByn,
         steps:[
           {label:'Garna комиссия при получении', detail:`${fmt(c.garna_pct*100,1)}%`, cost: garnaCut, ccy:'EUR'},
-          {label:'Конверсия EUR→BYN у Garna', detail:`${fmt(garnaRate,4)} BYN/EUR`, cost:0},
+          {label:'Конверсия EUR→BYN у Garna', detail:`${fmt(garnaRate,4)} Br/€`, cost:0, conversion:true, toCcy:'BYN', toAmount:bynAfterConv},
           {label:'Garna: fee за SWIFT-вывод в BYN', cost: swiftFee, ccy:'BYN'},
           {label:'Корр.банки RB (санкц-риск)', cost: corrRb, ccy:'BYN'},
           {label:'Входящий SWIFT в БСБ', cost: bsbInFee, ccy:'BYN'},
