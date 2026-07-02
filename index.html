@@ -51,6 +51,7 @@
     <div class="flex items-center gap-2 flex-wrap">
       <div id="ratesStatus" class="text-[11px] text-ink-500 mr-1">Курсы: загрузка…</div>
       <button id="reloadRates" class="text-[11px] px-2.5 py-1 rounded-md border border-ink-200 hover:border-brand-500 hover:text-brand-600 transition">Обновить курсы</button>
+      <button id="shareBtn" title="Скопировать ссылку с вашими курсами и комиссиями (работает в инкогнито и на других устройствах)" class="text-[11px] px-2.5 py-1 rounded-md border border-ink-200 hover:border-brand-500 hover:text-brand-600 transition">🔗 Ссылка</button>
       <button id="exportBtn" title="Скачать все ваши курсы и комиссии в JSON-файл" class="text-[11px] px-2.5 py-1 rounded-md border border-ink-200 hover:border-brand-500 hover:text-brand-600 transition">⬇ Экспорт</button>
       <button id="importBtn" title="Загрузить JSON-файл с настройками" class="text-[11px] px-2.5 py-1 rounded-md border border-ink-200 hover:border-brand-500 hover:text-brand-600 transition">⬆ Импорт</button>
       <input type="file" id="importFile" accept="application/json,.json" class="hidden"/>
@@ -1230,6 +1231,24 @@ $('exportBtn').addEventListener('click', () => {
   URL.revokeObjectURL(url);
 });
 
+$('shareBtn').addEventListener('click', async () => {
+  const data = { v: 1, values: {} };
+  INPUTS.forEach(id => { if ($(id)) data.values[id] = $(id).value; });
+  data.mode = $('mode').value;
+  data.npdOn = $('npdOn').checked;
+  // base64url для безопасной вставки в URL
+  const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(data))))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const url = `${location.origin}${location.pathname}#data=${b64}`;
+  try {
+    await navigator.clipboard.writeText(url);
+    alert('Ссылка с вашими настройками скопирована в буфер обмена.\n\nСохраните её как закладку — открытие этой ссылки в любом браузере (даже в инкогнито или на другом устройстве) автоматически применит все ваши курсы и комиссии.');
+  } catch (e) {
+    // fallback если clipboard недоступен (например, не HTTPS)
+    prompt('Скопируйте ссылку с настройками:', url);
+  }
+});
+
 $('importBtn').addEventListener('click', () => $('importFile').click());
 
 $('importFile').addEventListener('change', async (e) => {
@@ -1255,9 +1274,32 @@ $('importFile').addEventListener('change', async (e) => {
   }
 });
 
+// Применить настройки из URL-хеша #data=... (если открыли по shareable-ссылке)
+function applyHashData() {
+  const m = (location.hash || '').match(/^#data=(.+)$/);
+  if (!m) return false;
+  try {
+    let b64 = m[1].replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4) b64 += '=';
+    const data = JSON.parse(decodeURIComponent(escape(atob(b64))));
+    if (!data.values) return false;
+    Object.entries(data.values).forEach(([id, v]) => {
+      if ($(id)) $(id).value = v;
+    });
+    if (data.mode && $('mode')) $('mode').value = data.mode;
+    if (typeof data.npdOn === 'boolean' && $('npdOn')) $('npdOn').checked = data.npdOn;
+    return true;
+  } catch (e) {
+    console.warn('Не удалось разобрать данные из URL:', e);
+    return false;
+  }
+}
+
 loadState();
+const cameFromLink = applyHashData();
 $('targetWrap').hidden = $('mode').value !== 'to-target';
 renderAll();
+if (cameFromLink) saveState();  // Сохраняем в localStorage, чтобы F5 не потерял
 fetchRates();
 </script>
 </body>
